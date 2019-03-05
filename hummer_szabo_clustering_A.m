@@ -1,20 +1,7 @@
-function [R,P_EQ,A]=hummer_szabo_clustering(K, P_eq, committor)
+function [R,P_EQ,A]=hummer_szabo_clustering_A(K, P_eq, A)
 
 % Variable names in upper case correspond to the reduced system. Variable
 % names in lower case correspond to the full system.
-N=size(K,1);
-n_cluster = 2;
-A=zeros(N,n_cluster);
-for i = 1:N
-    if committor(i)<0.5
-        A(i,1) = 1;
-    elseif committor(i)>0.5
-        A(i,2) = 1;
-    else
-        A(i,randi(n_cluster))=1;
-    end
-end
-
 [n, ~] = size(K);
 
 num_of_clusters=size(A,2);
