@@ -77,6 +77,7 @@ kem_max=0;
 for i=1:N-1
     for j=i+1:N
         end_points=[i,j];
+        [i,j];
         
         % now for each other state I want to compute the commitor probability to
         % reach one state or the other first, details on what i'm doing are here:
@@ -86,28 +87,39 @@ for i=1:N-1
         % the next bit is to now coarse grain the states based on
         % similarity of committor probability
         % do hummer-szabo clustering of rate matrix K
-        [R,P_EQ,Aclus]=hummer_szabo_clustering(K', eq, committor);
-        % analyse eigenvalues vectors of clustered matrix R
-        [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
-        
-        % compute reduced kemeny (for 2 state clustering this is just the
-        % same as the slowest timescale
-        kemenyR=sum(-1./Reigs(2:end));
-        
-        %  save the info for the iteration which maximises kemeny (this may
-        %  not be unique), will only save the first choice found
-        if kemenyR>kem_max
-            kem_max = kemenyR;
-            best_wells = end_points;
-            best_split = Aclus;
-            keyboard
-        end
-        
-        %save for eigenvector end points
-        if i==min(b1,b2)
-            if j==max(b1,b2)
-                sec_eig_split = Aclus;
+        kem_local = 0;
+        [~,tmp2]=sort(committor);
+        for i1=1:N-1
+            A=zeros(N,2);
+            A(tmp2(1:i1),1)=1;
+            A(tmp2(i1+1:end),2)=1;
+            [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
+            
+            % analyse eigenvalues vectors of clustered matrix R
+            [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
+            
+            % compute reduced kemeny (for 2 state clustering this is just the
+            % same as the slowest timescale
+            kemenyR=sum(-1./Reigs(2:end));
+            
+            %  save the info for the iteration which maximises kemeny (this may
+            %  not be unique), will only save the first choice found
+            if kemenyR>kem_max
+                kem_max = kemenyR;
+                best_wells = end_points;
+                best_split = Aclus;
             end
+            if kemenyR>kem_local
+                kem_local = kemenyR;
+                local_split(i,j,:,:)=Aclus;
+            end
+            
+        end
+    end
+    %save for eigenvector end points
+    if i==min(b1,b2)
+        if j==max(b1,b2)
+            sec_eig_split = best_split;
         end
     end
 end
