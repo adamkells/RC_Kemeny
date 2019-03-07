@@ -13,7 +13,7 @@ M = 5; % number of edges within a cluster
 %[A]=make_lin_graph(M); % make linear chain graph
 
 %if i want a multi state-esque network
-multi_state = 3; % number of clusters
+multi_state = 2; % number of clusters
 ncon = 1; % number of intercluster links
 for i = 1:multi_state-1
     [A1]=make_graph(M);
@@ -30,10 +30,6 @@ for i = 1:multi_state-1
 end
 N=size(A,1); % total number of nodes in the network
 
-% make a figure of the graph we have generated
-G = digraph(A); % directed graph from adjacency matrix generated
-h=plot(G);
-
 % create a matrix which describes the rate of transition between states
 % evenly divide rate among number of states linked to
 for i = 1:N
@@ -45,6 +41,20 @@ end
 for i = 1:N
     K(i,i)=-sum(K(i,:).*A(i,:));
 end
+
+G = digraph(A); % directed graph from adjacency matrix generated
+
+tmp=reshape(K',[N^2,1]);
+tmp2=tmp(tmp>0);
+G.Edges.Weight = tmp2;
+G.Edges.LWidths = 3*G.Edges.Weight/max(G.Edges.Weight);
+
+% make a figure of the graph we have generated
+h=plot(G);
+h.LineWidth = G.Edges.LWidths;
+% layout(h,'force3')
+% view(3)
+% keyboard
 
 % do spectral decomposition
 [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K');
@@ -64,7 +74,6 @@ kemeny = sum(-1./Keigs(2:end));
 % lets choose two states
 end_points = randi(N,[1,2]);
 kem_max=0;
-num_clusters = 3;
 for i=1:N-1
     for j=i+1:N
         end_points=[i,j];
@@ -77,12 +86,7 @@ for i=1:N-1
         % the next bit is to now coarse grain the states based on
         % similarity of committor probability
         % do hummer-szabo clustering of rate matrix K
-        if num_clusters==2
-            [R,P_EQ,Aclus]=hummer_szabo_clustering(K', eq, committor);
-        else
-            [~,tmp2]=sort(committor)
-            
-        end
+        [R,P_EQ,Aclus]=hummer_szabo_clustering(K', eq, committor);
         % analyse eigenvalues vectors of clustered matrix R
         [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
         
@@ -110,17 +114,20 @@ end
 % colour based on 'best' splitting
 figure()
 h = plot(G);
+h.LineWidth = G.Edges.LWidths;
 highlight(h,find(best_split(:,1)),'NodeColor','g')
 title('Best splitting')
 
 % colour based on second eigenvector sign
 figure()
 h = plot(G);
+h.LineWidth = G.Edges.LWidths;
 highlight(h,find(sign(K_eig_R(:,2))+1),'NodeColor','g')
 title('Second eigenvector sign splitting')
 
 % colour based on second eigenvector end points
 figure()
 h = plot(G);
+h.LineWidth = G.Edges.LWidths;
 highlight(h,find(sec_eig_split(:,1)),'NodeColor','g')
 title('Second eigenvector end point splitting')
