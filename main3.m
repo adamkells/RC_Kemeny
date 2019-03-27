@@ -7,7 +7,7 @@ close all
 % Draw a random pair of states and connect them (if they are not already
 % connected) until theres sufficient edges
 
-M = 25; % number of edges within a cluster
+M = 5; % number of edges within a cluster
 
 [A]=make_graph(M); % make random graph
 %[A]=make_lin_graph(M); % make linear chain graph
@@ -146,7 +146,7 @@ for i=1:(N-2)
                 kemenyR=sum(-1./Reigs(2:end));
                 if kemenyR>kem_max2
                     kem_max2 = kemenyR;
-                    best_split_exhaus = Aclus;
+                    best_split_exhaus = Aclus;,
                 end
             end
         end
@@ -157,21 +157,23 @@ exhaust_time=toc;
 
 % colour based on 'best' splitting
 figure()
+subplot(1,2,1)
 h = plot(G);
 highlight(h,find(best_split(:,1)),'NodeColor','g')
 highlight(h,find(best_split(:,2)),'NodeColor','r')
-title('Best splitting')
+title('Best splitting','FontSize', 18)
 
 % colour based on exhaustive
-figure()
+%figure()
+subplot(1,2,2)
 h = plot(G);
-highlight(h,find(best_split_exhaus(:,1)),'NodeColor','g')
-highlight(h,find(best_split_exhaus(:,2)),'NodeColor','r')
-title('Exhaustive splitting')
+highlight(h,find(best_split_exhaus(:,3)),'NodeColor','g')
+highlight(h,find(best_split_exhaus(:,1)),'NodeColor','r')
+title('Exhaustive splitting','FontSize', 18)
 
-% colour based on second eigenvector end points
-figure()
-h = plot(G);
-highlight(h,find(sec_eig_split(:,1)),'NodeColor','g')
-highlight(h,find(sec_eig_split(:,2)),'NodeColor','r')
-title('Second eigenvector end point splitting')
+% % colour based on second eigenvector end points
+% figure()
+% h = plot(G);
+% highlight(h,find(sec_eig_split(:,1)),'NodeColor','g')
+% highlight(h,find(sec_eig_split(:,2)),'NodeColor','r')
+% title('Second eigenvector end point splitting','FontSize', 18)
