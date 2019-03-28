@@ -4,13 +4,13 @@ clear all
 close all
 % let's set up a 2-D szabo berezhovskii potential with arrhenius rates and
 % nearest neighbour transitions
-N=10;
+N=30;
 x=linspace(-0.5*pi,0.5*pi,N);
 y=linspace(-0.5*pi,0.5*pi,N);
 e=exp(1);
 for i = 1:length(x)
     for j = 1:length(y)
-        v(i,j)=-1*(e.^(-2*(x(i)+1).^2-2.*(y(j)-1).^2)+e.^(-2.*(x(i)+0.8).^2-2.*(y(j)+1).^2)+e.^(-2.*(x(i)-1).^2-2.*(y(j)).^2));
+        v(i,j)=-10*(e.^(-2*(x(i)+1).^2-2.*(y(j)-1).^2)+e.^(-2.*(x(i)+0.8).^2-2.*(y(j)+1).^2)+e.^(-2.*(x(i)-1).^2-2.*(y(j)).^2));
     end
 end
 v=v-min(min(v));
@@ -79,14 +79,14 @@ MM=jjhunter(expm(K));
 maximum = max(max(MM));
 [x,y]=find(MM==maximum);
 end_points=[x,y];
-keyboard
+
 % now for each other state I want to compute the commitor probability to
 % reach one state or the other first, details on what i'm doing are here:
 % www.emma-project.org/v2.2.1/api/generated/msmtools.analysis.committor.html
 [committor]=compute_commit(K,end_points);
 
 [~,tmp2]=sort(committor);
-
+keyboard
 % Now that I've identified the optimal wells, I will do a diffusive
 % boundary search for the optimal clustering
 T=5000;
