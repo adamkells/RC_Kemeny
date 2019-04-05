@@ -4,7 +4,7 @@ clear all
 close all
 % let's set up a 2-D szabo berezhovskii potential with arrhenius rates and
 % nearest neighbour transitions
-N=30;
+N=50;
 x=linspace(-0.5*pi,0.5*pi,N);
 y=linspace(-0.5*pi,0.5*pi,N);
 e=exp(1);
@@ -78,7 +78,7 @@ kem_max=0;
 MM=jjhunter(expm(K));
 maximum = max(max(MM));
 [x,y]=find(MM==maximum);
-end_points=[x,y];
+end_points=[x(1),y(1)];
 
 % now for each other state I want to compute the commitor probability to
 % reach one state or the other first, details on what i'm doing are here:
