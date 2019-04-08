@@ -1,5 +1,9 @@
 % Code by Adam Kells to use Kemeny constant for reaction coordinate
 % identification
+
+%%%% MAIN ISSUE WITH CODE: THE HUMMER SZABO METHOD IS BEING CALLED
+%%%% REPEATEDLY. THIS FUNCTION INVERTS THE FULL MATRIX, THIS OPERATION
+%%%% SHOULD BE PERFORMED IN ADVANCE AS IT IS BY FAR THE SLOWEST OPERATION
 clear all
 close all
 % let's set up a 2-D szabo berezhovskii potential with arrhenius rates and
@@ -14,7 +18,7 @@ for i = 1:length(x)
     end
 end
 v=v-min(min(v));
-
+keyboard
 % want to create a 1D rate matrix from this potential energy
 % have to create a mapping from 2D states in to a single index
 K=zeros(N^2);
@@ -59,9 +63,10 @@ K=K';
 [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K');
 kemeny = sum(-1./Keigs(2:end));
 
+
 % what are the endpoints suggested by the second eigenvector
-[a,b1] = min(K_eig_R(:,2));
-[a,b2] = max(K_eig_R(:,2));
+[~,b1] = min(K_eig_R(:,2));
+[~,b2] = max(K_eig_R(:,2));
 
 % do a comparison
 vest=-log(eq)*kbT;
@@ -75,10 +80,16 @@ ves=reshape(vest,[N,N]);
 % followed by diffusive boundaries
 tic
 kem_max=0;
-MM=jjhunter(expm(K));
-maximum = max(max(MM));
-[x,y]=find(MM==maximum);
-end_points=[x(1),y(1)];
+secvec=1;
+if secvec==0
+    MM=jjhunter(expm(K));
+    maximum = max(max(MM));
+    [x,y]=find(MM==maximum);
+    end_points=[x,y];
+elseif secvec==1
+    end_points=[b1,b2];
+end
+keyboard
 
 % now for each other state I want to compute the commitor probability to
 % reach one state or the other first, details on what i'm doing are here:
