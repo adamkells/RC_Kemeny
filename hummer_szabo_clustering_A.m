@@ -1,4 +1,4 @@
-function [R,P_EQ,A]=hummer_szabo_clustering_A(K, P_eq, A)
+function [R,P_EQ,A]=hummer_szabo_clustering_A(K,INV_K, P_eq, A)
 
 % Variable names in upper case correspond to the reduced system. Variable
 % names in lower case correspond to the full system.
@@ -30,6 +30,6 @@ D_n=diag(P_eq);
 
 % Calculating reduced matrix for the reduced two-state model
 % Hummer-Szabo 2014, equation 12
-R=P_EQ*ONE_VEC - D_N*(inv(transpose(A)*(inv(P_eq*one_vec-K))*D_n*A));
+R=P_EQ*ONE_VEC - D_N*(inv(transpose(A)*INV_K*D_n*A));
 
 end

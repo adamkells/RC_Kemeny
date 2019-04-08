@@ -30,7 +30,7 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=40;
+N=10;
 A=erdosrenyi_2(N,N/2,[0.8,0.025;0.025,0.8]);
 N=length(A);
 % make a figure of the graph we have generated
@@ -58,17 +58,24 @@ kemeny = sum(-1./Keigs(2:end));
 [a,b1] = min(K_eig_R(:,2));
 [a,b2] = max(K_eig_R(:,2));
 
-
+one_vec=ones(1,length(K));
+INV_K=(inv(eq*one_vec-K'));
 %%
 % in this piece of code I want to compare:
 % choosing end states from committor clustering
 % followed by diffusive boundaries
 tic
 kem_max=0;
-MM=jjhunter(expm(K'));
-maximum = max(max(MM));
-[x,y]=find(MM==maximum);
-end_points=[x(1),y(1)];
+secvec=1;
+if secvec==0
+    MM=jjhunter(expm(K));
+    maximum = max(max(MM));
+    [x,y]=find(MM==maximum);
+    end_points=[x,y];
+elseif secvec==1
+    end_points=[b1,b2];
+end
+
 
 % now for each other state I want to compute the commitor probability to
 % reach one state or the other first, details on what i'm doing are here:
@@ -90,7 +97,7 @@ end
 % temperatures for sims
 for i=1:n_sim
     boundary(:,i)
-    [kemeny_latest(i)]=kemeny_boundary(K,eq,boundary(:,i),tmp2);
+    [kemeny_latest(i)]=kemeny_boundary(K,INV_K,eq,boundary(:,i),tmp2);
 end
 switchcount=0;
 prop_count=0;
@@ -106,7 +113,7 @@ while t<T
         bound_new(:,i) = boundary(:,i);
         bound_new(bound,i) = bound_new(bound,i)+randi([0,1])*2-1;
         try
-            [kemenyR_new]=kemeny_boundary(K,eq,bound_new(:,i),tmp2);
+            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,bound_new(:,i),tmp2);
         catch
             kemenyR_new = 0;
         end
@@ -174,36 +181,36 @@ title('Best splitting','FontSize', 18)
 % states to cluster in to.
 %tic
 
-% kem_max2=0;
-% count=0;
-% for i=1:(N-2)
-%     clus1=nchoosek([1:N],i);
-%     [i]
-%     tic
-%     for k=1:size(clus1,1)
-%         clus1_tmp=clus1(k,:);
-%         for j=1:N-i-1
-%             clus2=nchoosek(setdiff([1:N],clus1_tmp),j);
-%             for kk=1:size(clus2,1)
-%                 count=count+1;
-%                 A=zeros(N,3);
-%                 clus2_tmp=clus2(kk,:);
-%                 clus3_tmp=setdiff([1:N],[clus1_tmp,clus2_tmp]);
-%                 A(clus1_tmp,1)=1;
-%                 A(clus2_tmp,2)=1;
-%                 A(clus3_tmp,3)=1;
-%                 [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
-%                 [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
-%                 kemenyR=sum(-1./Reigs(2));%:end));
-%                 if kemenyR>kem_max2
-%                     kem_max2 = kemenyR;
-%                     best_split_exhaus = Aclus;
-%                 end
-%             end
-%         end
-%     end
-%     time = toc
-% end
+kem_max2=0;
+count=0;
+for i=1:(N-2)
+    clus1=nchoosek([1:N],i);
+    [i]
+    tic
+    for k=1:size(clus1,1)
+        clus1_tmp=clus1(k,:);
+        for j=1:N-i-1
+            clus2=nchoosek(setdiff([1:N],clus1_tmp),j);
+            for kk=1:size(clus2,1)
+                count=count+1;
+                A=zeros(N,3);
+                clus2_tmp=clus2(kk,:);
+                clus3_tmp=setdiff([1:N],[clus1_tmp,clus2_tmp]);
+                A(clus1_tmp,1)=1;
+                A(clus2_tmp,2)=1;
+                A(clus3_tmp,3)=1;
+                [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K',INV_K, eq, A);
+                [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
+                kemenyR=sum(-1./Reigs(2));%:end));
+                if kemenyR>kem_max2
+                    kem_max2 = kemenyR;
+                    best_split_exhaus = Aclus;
+                end
+            end
+        end
+    end
+    time = toc
+end
 %exhaust_time=toc;
 
 % third of all, I want to do a semi-exhaustive search where I take the 1-D
@@ -220,8 +227,9 @@ for i1=2:N-2
         A(tmp2(i1+1:j1),2)=1;
         A(tmp2(j1+1:end),3)=1;
         try
-            [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
+            [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K',INV_K, eq, A);
             [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
+            kemenyR=sum(-1./Reigs(2:end));
             kemenyR=sum(-1./Reigs(2));
         catch
             kemenyR=0;
@@ -238,12 +246,11 @@ for i1=2:N-2
         if kemenyR>kem_max
             kem_max = kemenyR;
             best_wells = end_points;
-            best_split_exhaus = Aclus;
+            best_split_exhaus_arr = Aclus;
             best_bound=[i1,j1];
         end
     end
 end
-
 
 % colour based on exhaustive
 %figure()

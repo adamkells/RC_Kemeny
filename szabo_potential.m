@@ -1,24 +1,21 @@
 % Code by Adam Kells to use Kemeny constant for reaction coordinate
 % identification
 
-%%%% MAIN ISSUE WITH CODE: THE HUMMER SZABO METHOD IS BEING CALLED
-%%%% REPEATEDLY. THIS FUNCTION INVERTS THE FULL MATRIX, THIS OPERATION
-%%%% SHOULD BE PERFORMED IN ADVANCE AS IT IS BY FAR THE SLOWEST OPERATION
 clear all
 close all
 % let's set up a 2-D szabo berezhovskii potential with arrhenius rates and
 % nearest neighbour transitions
-N=10;
-x=linspace(-0.5*pi,0.5*pi,N);
+N=20;
+x=linspace(-0.5*pi,0.25*pi,N);
 y=linspace(-0.5*pi,0.5*pi,N);
 e=exp(1);
 for i = 1:length(x)
     for j = 1:length(y)
-        v(i,j)=-10*(e.^(-2*(x(i)+1).^2-2.*(y(j)-1).^2)+e.^(-2.*(x(i)+0.8).^2-2.*(y(j)+1).^2))+e.^(-2.*(x(i)-1).^2-2.*(y(j)).^2));
+        v(i,j)=-10*(e.^(-2*(x(i)+1).^2-2.*(y(j)-1).^2)+e.^(-2.*(x(i)+0.8).^2-2.*(y(j)+1).^2));%+e.^(-2.*(x(i)-1).^2-2.*(y(j)).^2));
     end
 end
 v=v-min(min(v));
-keyboard
+
 % want to create a 1D rate matrix from this potential energy
 % have to create a mapping from 2D states in to a single index
 K=zeros(N^2);
@@ -59,6 +56,7 @@ for i=1:size(K,1)
 end
 K=K';
 
+
 % do spectral decomposition
 [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K');
 kemeny = sum(-1./Keigs(2:end));
@@ -73,7 +71,8 @@ vest=-log(eq)*kbT;
 vest=vest-min(vest);
 ves=reshape(vest,[N,N]);
 
-
+one_vec=ones(1,length(K));
+INV_K=(inv(eq*one_vec-K'));
 %%
 % in this piece of code I want to compare:
 % choosing end states from committor clustering
@@ -89,7 +88,7 @@ if secvec==0
 elseif secvec==1
     end_points=[b1,b2];
 end
-keyboard
+
 
 % now for each other state I want to compute the commitor probability to
 % reach one state or the other first, details on what i'm doing are here:
@@ -97,10 +96,10 @@ keyboard
 [committor]=compute_commit(K,end_points);
 
 [~,tmp2]=sort(committor);
-keyboard
+
 % Now that I've identified the optimal wells, I will do a diffusive
 % boundary search for the optimal clustering
-T=5000;
+T=20000;
 t=0;
 % let's set up n_sim simulateneous searches at different temperatures
 n_sim=10;
@@ -111,7 +110,7 @@ end
 % temperatures for sims
 for i=1:n_sim
     boundary(:,i)
-    [kemeny_latest(i)]=kemeny_boundary(K,eq,boundary(:,i),tmp2);
+    [kemeny_latest(i)]=kemeny_boundary(K,INV_K,eq,boundary(:,i),tmp2);
 end
 switchcount=0;
 prop_count=0;
@@ -127,7 +126,7 @@ while t<T
         bound_new(:,i) = boundary(:,i);
         bound_new(bound,i) = bound_new(bound,i)+randi([0,1])*2-1;
         try
-            [kemenyR_new]=kemeny_boundary(K,eq,bound_new(:,i),tmp2);
+            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,bound_new(:,i),tmp2);
         catch
             break
         end

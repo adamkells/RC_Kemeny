@@ -18,7 +18,7 @@ for i = 1:length(x)
     end
 end
 v=v-min(min(v));
-keyboard
+
 % want to create a 1D rate matrix from this potential energy
 % have to create a mapping from 2D states in to a single index
 K=zeros(N^2);
@@ -59,6 +59,7 @@ for i=1:size(K,1)
 end
 K=K';
 
+
 % do spectral decomposition
 [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K');
 kemeny = sum(-1./Keigs(2:end));
@@ -73,7 +74,9 @@ vest=-log(eq)*kbT;
 vest=vest-min(vest);
 ves=reshape(vest,[N,N]);
 
+one_vec=ones(1,n);
 
+INV_K=(inv(eq*one_vec-K'));
 %%
 % in this piece of code I want to compare:
 % choosing end states from committor clustering
@@ -89,7 +92,6 @@ if secvec==0
 elseif secvec==1
     end_points=[b1,b2];
 end
-keyboard
 
 
 % now for each other state I want to compute the commitor probability to
