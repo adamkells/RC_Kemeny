@@ -30,8 +30,8 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=60;
-A=erdosrenyi_2(N,N/3,[0.8,0.025;0.025,0.8]);
+N=10;
+A=erdosrenyi_2(N,N/2,[0.8,0.025;0.025,0.8]);
 N=length(A);
 % make a figure of the graph we have generated
 G = digraph(A); % directed graph from adjacency matrix generated
@@ -49,7 +49,7 @@ for i = 1:N
     K(i,i)=0;
     K(i,i)=-sum(K(:,i));%.*A(i,:));
 end
-
+Adj=A;
 % do spectral decomposition
 [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K');
 kemeny = sum(-1./Keigs(2:end));
@@ -96,11 +96,18 @@ boundary(1,:)=randi([2,N-2],[1,n_sim]);
 for i=1:n_sim
     boundary(2,i)=randi([boundary(1,i)+1,N-1],1);
 end
+
+A=zeros([N,3,n_sim]);
+for i=1:n_sim
+    A(tmp2(1:boundary(1)),1,i)=1;
+    A(tmp2(boundary(1)+1:boundary(2)),2,i)=1;
+    A(tmp2(boundary(2)+1:end),3,i)=1;
+end
 % temperatures for sims
 for i=1:n_sim
-    boundary(:,i)
-    [kemeny_latest(i)]=kemeny_boundary(K,INV_K,eq,boundary(:,i),tmp2);
+    [kemeny_latest(i)]=kemeny_boundary(K,INV_K,eq,A(:,:,i));
 end
+keyboard
 switchcount=0;
 prop_count=0;
 temp=1:10;
@@ -111,27 +118,43 @@ while t<T
     % for each simulation
     for i=1:n_sim
         
-        % pick a boundary
-        bound = randi([1,2]);
-        % propose a change to the boundary
-        bound_new(:,i) = boundary(:,i);
-        bound_new(bound,i) = bound_new(bound,i)+randi([0,1])*2-1;
+        % pick a connection between differing clusters
+        % find two nodes from different clusters and propose flipping one
+        % of the nodes
+        edge=(Adj-eye(length(Adj)))*squeeze(A(:,:,i));
+        edge=(1-A(:,:,i)).*edge;
+        edge_nodes=mod(find(edge),N);
+        edge_nodes(edge_nodes==0)=N;
+        switch_node=datasample(edge_nodes,1); % choose a node that is
+        oldC=find(A(switch_node,:,i));
+        % connected to a different cluster
+        edge_cluster=find(edge(switch_node)); % check which clusters it connected to
+        newC=datasample(edge_cluster,1); % pick a cluster
+        %switch_node2=Adj(switch_node,:).*A(:,switch_cluster,i); 
+        %switch_node2=datasample(switch_node2,1);
+        % second node to do the switch with
+
+        keyboard
+        % propose a flip to the boundary
+        A_new(:,:,i)=A(:,:,i);
+        A_new(node_switch,oldC,i)=0;
+        A_new(node_switch,newC,i)=1;
         try
-            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,bound_new(:,i),tmp2);
+            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,A(:,:,i));
         catch
             kemenyR_new = 0;
         end
         if kemenyR_new>kemeny_latest(i)
             switchcount=switchcount+1;
             kemeny_latest(i)=kemenyR_new;
-            boundary(:,i)=bound_new(:,i);
+            A(:,:,i)=A_new(:,:,i);
         elseif kemenyR_new<=kemeny_latest(i)
             val=rand(1);
             condition = exp((kemenyR_new-kemeny_latest(i))*(1/temp(i)));
             if val<condition
                 switchcount=switchcount+1;
                 kemeny_latest(i)=kemenyR_new;
-                boundary(:,i)=bound_new(:,i);
+                A(:,:,i)=A_new(:,:,i);
             end
         end  
     end
@@ -145,14 +168,14 @@ while t<T
             if kemeny_latest(ii)>kemeny_latest(jj)
                 %switchcount=switchcount+1;
                 kemeny_latest([ii jj])=kemeny_latest([jj ii]);
-                boundary(:,[ii jj])=boundary(:,[jj, ii]);
+                A(:,:,[ii jj])=A(:,:,[jj, ii]);
             else
                 val=rand(1);
                 condition = exp((kemeny_latest(jj)-kemeny_latest(ii))*((1/temp(ii))-(1/temp(jj))));
                 if condition<val
                     %switchcount=switchcount+1;
                     kemeny_latest([ii jj])=kemeny_latest([jj ii]);
-                    boundary(:,[ii jj])=boundary(:,[jj, ii]);
+                    A(:,:,[ii jj])=A(:,:,[jj, ii]);
                 end
             end
         end
@@ -161,17 +184,13 @@ while t<T
     % after each timestep, sweep all the states and look for the optimum
     [a,b]=max(kemeny_latest);
     if a>best_kem_yet
-        opt_bound=boundary(:,b);
+        opt_bound=A(:,:,b);
         best_kem_yet=a;
     end
     timetaken=toc
       keyboard
 end
-A=zeros(N,3);
-A(tmp2(1:opt_bound(1)),1)=1;
-A(tmp2(opt_bound(1)+1:opt_bound(2)),2)=1;
-A(tmp2(opt_bound(2)+1:end),3)=1;
-best_split=A;
+best_split=opt_bound;
 diffusion=toc;
 
 % colour based on 'best' splitting
