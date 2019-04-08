@@ -30,13 +30,13 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=30;
-A=erdosrenyi_2(N,N/2,[0.9,0.1;0.1,0.9]);
+N=40;
+A=erdosrenyi_2(N,N/2,[0.8,0.025;0.025,0.8]);
 N=length(A);
 % make a figure of the graph we have generated
 G = digraph(A); % directed graph from adjacency matrix generated
 h=plot(G);
-keyboard
+
 % create a matrix which describes the rate of transition between states
 % evenly divide rate among number of states linked to
 for i = 1:N
@@ -46,7 +46,8 @@ for i = 1:N
 end
 
 for i = 1:N
-    K(i,i)=-sum(K(i,:).*A(i,:));
+    K(i,i)=0;
+    K(i,i)=-sum(K(:,i));%.*A(i,:));
 end
 
 % do spectral decomposition
@@ -64,7 +65,7 @@ kemeny = sum(-1./Keigs(2:end));
 % followed by diffusive boundaries
 tic
 kem_max=0;
-MM=jjhunter(expm(K));
+MM=jjhunter(expm(K'));
 maximum = max(max(MM));
 [x,y]=find(MM==maximum);
 end_points=[x(1),y(1)];
@@ -72,13 +73,13 @@ end_points=[x(1),y(1)];
 % now for each other state I want to compute the commitor probability to
 % reach one state or the other first, details on what i'm doing are here:
 % www.emma-project.org/v2.2.1/api/generated/msmtools.analysis.committor.html
-[committor]=compute_commit(K,end_points);
+[committor]=compute_commit(K',end_points);
 
 [~,tmp2]=sort(committor);
 
 % Now that I've identified the optimal wells, I will do a diffusive
 % boundary search for the optimal clustering
-T=N*200;
+T=N*100;
 t=0;
 % let's set up n_sim simulateneous searches at different temperatures
 n_sim=10;
@@ -107,7 +108,7 @@ while t<T
         try
             [kemenyR_new]=kemeny_boundary(K,eq,bound_new(:,i),tmp2);
         catch
-            break
+            kemenyR_new = 0;
         end
         if kemenyR_new>kemeny_latest(i)
             switchcount=switchcount+1;
@@ -169,41 +170,40 @@ highlight(h,find(best_split(:,1)),'NodeColor','g')
 highlight(h,find(best_split(:,2)),'NodeColor','r')
 title('Best splitting','FontSize', 18)
 
-keyboard
 % Here I want to do the exhaustive version where I try every combination of
 % states to cluster in to.
 %tic
 
-kem_max2=0;
-count=0;
-for i=1:(N-2)
-    clus1=nchoosek([1:N],i);
-    [i]
-    tic
-    for k=1:size(clus1,1)
-        clus1_tmp=clus1(k,:);
-        for j=1:N-i-1
-            clus2=nchoosek(setdiff([1:N],clus1_tmp),j);
-            for kk=1:size(clus2,1)
-                count=count+1;
-                A=zeros(N,3);
-                clus2_tmp=clus2(kk,:);
-                clus3_tmp=setdiff([1:N],[clus1_tmp,clus2_tmp]);
-                A(clus1_tmp,1)=1;
-                A(clus2_tmp,2)=1;
-                A(clus3_tmp,3)=1;
-                [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
-                [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
-                kemenyR=sum(-1./Reigs(2));%:end));
-                if kemenyR>kem_max2
-                    kem_max2 = kemenyR;
-                    best_split_exhaus = Aclus;
-                end
-            end
-        end
-    end
-    time = toc
-end
+% kem_max2=0;
+% count=0;
+% for i=1:(N-2)
+%     clus1=nchoosek([1:N],i);
+%     [i]
+%     tic
+%     for k=1:size(clus1,1)
+%         clus1_tmp=clus1(k,:);
+%         for j=1:N-i-1
+%             clus2=nchoosek(setdiff([1:N],clus1_tmp),j);
+%             for kk=1:size(clus2,1)
+%                 count=count+1;
+%                 A=zeros(N,3);
+%                 clus2_tmp=clus2(kk,:);
+%                 clus3_tmp=setdiff([1:N],[clus1_tmp,clus2_tmp]);
+%                 A(clus1_tmp,1)=1;
+%                 A(clus2_tmp,2)=1;
+%                 A(clus3_tmp,3)=1;
+%                 [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
+%                 [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
+%                 kemenyR=sum(-1./Reigs(2));%:end));
+%                 if kemenyR>kem_max2
+%                     kem_max2 = kemenyR;
+%                     best_split_exhaus = Aclus;
+%                 end
+%             end
+%         end
+%     end
+%     time = toc
+% end
 %exhaust_time=toc;
 
 % third of all, I want to do a semi-exhaustive search where I take the 1-D
@@ -211,28 +211,38 @@ end
 
 % This bit of code that's commented out, doesn't work at the moment cos
 % it's missing the update rule for A.
-% kem_max=0;
-% for i1=2:N-2
-%     for j1=i+1:N-1
-% 
-%         [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
-%         
-%         % analyse eigenvalues vectors of clustered matrix R
-%         [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
-%         
-%         % compute reduced kemeny (for 2 state clustering this is just the
-%         % same as the slowest timescale
-%         kemenyR=sum(-1./Reigs(2:end));
-%         
-%         %  save the info for the iteration which maximises kemeny (this may
-%         %  not be unique), will only save the first choice found
-%         if kemenyR>kem_max
-%             kem_max = kemenyR;
-%             best_wells = end_points;
-%             best_split = Aclus;
-%         end
-%     end
-% end
+kem_max=0;
+for i1=2:N-2
+    for j1=i+1:N-1
+        [i1,j1]
+        A=zeros(N,3);
+        A(tmp2(1:i1),1)=1;
+        A(tmp2(i1+1:j1),2)=1;
+        A(tmp2(j1+1:end),3)=1;
+        try
+            [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
+            [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
+            kemenyR=sum(-1./Reigs(2));
+        catch
+            kemenyR=0;
+        end
+        % analyse eigenvalues vectors of clustered matrix R
+        
+        % compute reduced kemeny (for 2 state clustering this is just the
+        % same as the slowest timescale
+        %:end));
+        
+        %  save the info for the iteration which maximises kemeny (this may
+        %  not be unique), will only save the first choice found
+
+        if kemenyR>kem_max
+            kem_max = kemenyR;
+            best_wells = end_points;
+            best_split_exhaus = Aclus;
+            best_bound=[i1,j1];
+        end
+    end
+end
 
 
 % colour based on exhaustive
