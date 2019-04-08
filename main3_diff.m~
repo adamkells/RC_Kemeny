@@ -30,8 +30,8 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=10;
-A=erdosrenyi_2(N,N/2,[0.8,0.025;0.025,0.8]);
+N=60;
+A=erdosrenyi_2(N,N/3,[0.8,0.025;0.025,0.8]);
 N=length(A);
 % make a figure of the graph we have generated
 G = digraph(A); % directed graph from adjacency matrix generated
@@ -60,6 +60,8 @@ kemeny = sum(-1./Keigs(2:end));
 
 one_vec=ones(1,length(K));
 INV_K=(inv(eq*one_vec-K'));
+
+keyboard
 %%
 % in this piece of code I want to compare:
 % choosing end states from committor clustering
@@ -105,8 +107,10 @@ temp=1:10;
 best_kem_yet=0;
 while t<T
     t=t+1;
+    tic
     % for each simulation
     for i=1:n_sim
+        
         % pick a boundary
         bound = randi([1,2]);
         % propose a change to the boundary
@@ -160,7 +164,8 @@ while t<T
         opt_bound=boundary(:,b);
         best_kem_yet=a;
     end
-    
+    timetaken=toc
+      keyboard
 end
 A=zeros(N,3);
 A(tmp2(1:opt_bound(1)),1)=1;
@@ -175,42 +180,43 @@ subplot(1,2,1)
 h = plot(G);
 highlight(h,find(best_split(:,1)),'NodeColor','g')
 highlight(h,find(best_split(:,2)),'NodeColor','r')
+highlight(h,find(best_split(:,3)),'NodeColor','k')
 title('Best splitting','FontSize', 18)
 
 % Here I want to do the exhaustive version where I try every combination of
 % states to cluster in to.
 %tic
 
-kem_max2=0;
-count=0;
-for i=1:(N-2)
-    clus1=nchoosek([1:N],i);
-    [i]
-    tic
-    for k=1:size(clus1,1)
-        clus1_tmp=clus1(k,:);
-        for j=1:N-i-1
-            clus2=nchoosek(setdiff([1:N],clus1_tmp),j);
-            for kk=1:size(clus2,1)
-                count=count+1;
-                A=zeros(N,3);
-                clus2_tmp=clus2(kk,:);
-                clus3_tmp=setdiff([1:N],[clus1_tmp,clus2_tmp]);
-                A(clus1_tmp,1)=1;
-                A(clus2_tmp,2)=1;
-                A(clus3_tmp,3)=1;
-                [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K',INV_K, eq, A);
-                [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
-                kemenyR=sum(-1./Reigs(2));%:end));
-                if kemenyR>kem_max2
-                    kem_max2 = kemenyR;
-                    best_split_exhaus = Aclus;
-                end
-            end
-        end
-    end
-    time = toc
-end
+% kem_max2=0;
+% count=0;
+% for i=1:(N-2)
+%     clus1=nchoosek([1:N],i);
+%     [i]
+%     tic
+%     for k=1:size(clus1,1)
+%         clus1_tmp=clus1(k,:);
+%         for j=1:N-i-1
+%             clus2=nchoosek(setdiff([1:N],clus1_tmp),j);
+%             for kk=1:size(clus2,1)
+%                 count=count+1;
+%                 A=zeros(N,3);
+%                 clus2_tmp=clus2(kk,:);
+%                 clus3_tmp=setdiff([1:N],[clus1_tmp,clus2_tmp]);
+%                 A(clus1_tmp,1)=1;
+%                 A(clus2_tmp,2)=1;
+%                 A(clus3_tmp,3)=1;
+%                 [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K',INV_K, eq, A);
+%                 [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
+%                 kemenyR=sum(-1./Reigs(2));%:end));
+%                 if kemenyR>kem_max2
+%                     kem_max2 = kemenyR;
+%                     best_split_exhaus = Aclus;
+%                 end
+%             end
+%         end
+%     end
+%     time = toc
+% end
 %exhaust_time=toc;
 
 % third of all, I want to do a semi-exhaustive search where I take the 1-D
@@ -246,7 +252,7 @@ for i1=2:N-2
         if kemenyR>kem_max
             kem_max = kemenyR;
             best_wells = end_points;
-            best_split_exhaus_arr = Aclus;
+            best_split_exhaus = Aclus;
             best_bound=[i1,j1];
         end
     end
@@ -256,8 +262,9 @@ end
 %figure()
 subplot(1,2,2)
 h = plot(G);
-highlight(h,find(best_split_exhaus(:,3)),'NodeColor','g')
-highlight(h,find(best_split_exhaus(:,1)),'NodeColor','r')
+highlight(h,find(best_split_exhaus(:,3)),'NodeColor','k')
+highlight(h,find(best_split_exhaus(:,1)),'NodeColor','g')
+highlight(h,find(best_split_exhaus(:,2)),'NodeColor','r')
 title('Exhaustive splitting','FontSize', 18)
 
 % % colour based on second eigenvector end points
