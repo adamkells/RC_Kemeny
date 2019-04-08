@@ -13,5 +13,6 @@ A(tmp2(boundary(2)+1:end),3)=1;
 % compute reduced kemeny (for 2 state clustering this is just the
 % same as the slowest timescale
 kemenyR=sum(-1./Reigs(2:end));
+kemenyR=sum(-1./Reigs(2));
 
 end

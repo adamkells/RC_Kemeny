@@ -91,7 +91,6 @@ elseif secvec==1
 end
 keyboard
 
-
 % now for each other state I want to compute the commitor probability to
 % reach one state or the other first, details on what i'm doing are here:
 % www.emma-project.org/v2.2.1/api/generated/msmtools.analysis.committor.html
