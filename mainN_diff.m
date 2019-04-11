@@ -36,13 +36,14 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=90;
-A=erdosrenyi_2(N,N/3,[0.8,0.025;0.025,0.8]);
+
+nodes=[10,10,10,10,10,10];
+A=erdosrenyi_N(nodes,[0.8,0.025]);
 N=length(A);
 % make a figure of the graph we have generated
 G = digraph(A); % directed graph from adjacency matrix generated
 h=plot(G);
-
+keyboard
 % create a matrix which describes the rate of transition between states
 % evenly divide rate among number of states linked to
 for i = 1:N
@@ -98,26 +99,34 @@ T=N*100;
 t=0;
 % let's set up n_sim simulateneous searches at different temperatures
 n_sim=50;
-boundary(1,:)=randi([2,N/2],[1,n_sim]);
 
+% My way of choosing the initial grouping is pretty arbitrary and maybe not
+% the best way. Something to come back to.
+NCLUS=6; %number of clusters to use
+boundary(1,:)=randi([2,floor(N/(NCLUS-1))],[1,n_sim]);
 for i=1:n_sim
-    boundary(2,i)=randi([boundary(1,i)+1,N-1],1);
+    for j=2:(NCLUS-1)
+        boundary(j,i)=randi([boundary((j-1),i)+2,(floor(j*N/(NCLUS-1))-1)],1);
+    end
 end
 
 A=zeros([N,3,n_sim]);
 for i=1:n_sim
     A(tmp2(1:boundary(1,i)),1,i)=1;
-    A(tmp2(boundary(1,i)+1:boundary(2,i)),2,i)=1;
-    A(tmp2(boundary(2,i)+1:end),3,i)=1;
+    for j=2:(NCLUS-1)
+        A(tmp2(boundary((j-1),i)+1:boundary(j,i)),j,i)=1;
+    end
+    A(tmp2(boundary(end,i)+1:end),NCLUS,i)=1;
 end
 % temperatures for sims
 for i=1:n_sim
+    i
     [kemeny_latest(i)]=kemeny_boundary(K,INV_K,eq,A(:,:,i));
 end
 
 switchcount=0;
 prop_count=0;
-temp=linspace(0.25,100,n_sim);
+temp=linspace(0.025,1,n_sim);
 % I could calculate the acceptance ration on the fly and adjust the
 % temperature as I gok
 
@@ -205,6 +214,16 @@ while t<T
         end
     end
     
+    % I'm going to update the temperature during the simulation to try and
+    % keep the 50% acceptance
+    if mod(t,10)==0
+       t
+       px=switchcount/(n_sim*10); % currect accepted fraction since last update
+       switchcount=0;
+       correction=log(px)/log(0.5);
+       temp=temp*correction;
+    end
+    
     % after each timestep, sweep all the states and look for the optimum
     [a,b]=max(kemeny_latest);
     if a>best_kem_yet
@@ -221,9 +240,9 @@ keyboard
 figure()
 subplot(1,2,1)
 h = plot(G);
-highlight(h,find(best_split(:,1)),'NodeColor','g')
-highlight(h,find(best_split(:,2)),'NodeColor','r')
-highlight(h,find(best_split(:,3)),'NodeColor','k')
+for i=1:NCLUS
+    highlight(h,find(best_split(:,i)),'NodeColor',[rand(1,3)])
+end
 title('Best splitting','FontSize', 18)
 %
 % colour based on 'best' splitting
@@ -276,6 +295,7 @@ title('Best splitting','FontSize', 18)
 % third of all, I want to do a semi-exhaustive search where I take the 1-D
 % ordering and search every 1D clustering
 
+% This bit needs to be adapted to do general number of clusters
 kem_max=0;
 for i1=2:N-2
     for j1=i+1:N-1
@@ -314,9 +334,9 @@ end
 %figure()
 subplot(1,2,2)
 h = plot(G);
-highlight(h,find(best_split_exhaus(:,3)),'NodeColor','k')
-highlight(h,find(best_split_exhaus(:,1)),'NodeColor','g')
-highlight(h,find(best_split_exhaus(:,2)),'NodeColor','r')
+for i=1:NCLUS
+    highlight(h,find(best_split_exhaus(:,i)),'NodeColor',[rand(1,3)])
+end
 title('Exhaustive splitting','FontSize', 18)
 
 % % colour based on second eigenvector end points

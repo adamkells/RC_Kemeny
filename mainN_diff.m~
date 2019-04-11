@@ -36,13 +36,14 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=90;
-A=erdosrenyi_2(N,N/3,[0.8,0.025;0.025,0.8]);
+
+nodes=[30,30,30];
+A=erdosrenyi_N(nodes,[0.8,0.05]);
 N=length(A);
 % make a figure of the graph we have generated
 G = digraph(A); % directed graph from adjacency matrix generated
 h=plot(G);
-
+%keyboard
 % create a matrix which describes the rate of transition between states
 % evenly divide rate among number of states linked to
 for i = 1:N
@@ -98,16 +99,23 @@ T=N*100;
 t=0;
 % let's set up n_sim simulateneous searches at different temperatures
 n_sim=50;
-boundary(1,:)=randi([2,N/2],[1,n_sim]);
 
+% My way of choosing the initial grouping is pretty arbitrary and maybe not
+% the best way. Something to come back to.
+NCLUS=3; %number of clusters to use
+boundary(1,:)=randi([2,N/(NCLUS-1)],[1,n_sim]);
 for i=1:n_sim
-    boundary(2,i)=randi([boundary(1,i)+1,N-1],1);
+    for j=2:(NCLUS-1)
+        boundary(j,i)=randi([boundary((j-1),i)+1,j*N/(NCLUS-1)],1);
+    end
 end
 
 A=zeros([N,3,n_sim]);
 for i=1:n_sim
     A(tmp2(1:boundary(1,i)),1,i)=1;
-    A(tmp2(boundary(1,i)+1:boundary(2,i)),2,i)=1;
+    for j=2:(NCLUS-1)
+        A(tmp2(boundary((j-1),i)+1:boundary(j,i)),j,i)=1;
+    end
     A(tmp2(boundary(2,i)+1:end),3,i)=1;
 end
 % temperatures for sims
@@ -117,7 +125,7 @@ end
 
 switchcount=0;
 prop_count=0;
-temp=linspace(0.25,100,n_sim);
+temp=linspace(0.025,1,n_sim);
 % I could calculate the acceptance ration on the fly and adjust the
 % temperature as I gok
 
@@ -203,6 +211,16 @@ while t<T
                 end
             end
         end
+    end
+    
+    % I'm going to update the temperature during the simulation to try and
+    % keep the 50% acceptance
+    if mod(t,10)==0
+       t
+       px=switchcount/(n_sim*10); % currect accepted fraction since last update
+       switchcount=0;
+       correction=log(px)/log(0.5);
+       temp=temp*correction;
     end
     
     % after each timestep, sweep all the states and look for the optimum
