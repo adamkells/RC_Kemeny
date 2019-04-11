@@ -2,6 +2,12 @@
 % identification
 clear all
 close all
+
+%%%% I've got code that does the diffusive clustering but it's spending a
+%%%% lot of its time computing kemeny for clusters with 0 microstates. Need
+%%%% to make sure that if a cluster has only 1 microstate then that cannot
+%%%% be removed.
+
 % Create graph
 % choose a number of edges
 % Draw a random pair of states and connect them (if they are not already
@@ -30,7 +36,7 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=10;
+N=60;
 A=erdosrenyi_2(N,N/2,[0.8,0.025;0.025,0.8]);
 N=length(A);
 % make a figure of the graph we have generated
@@ -61,7 +67,7 @@ kemeny = sum(-1./Keigs(2:end));
 one_vec=ones(1,length(K));
 INV_K=(inv(eq*one_vec-K'));
 
-keyboard
+
 %%
 % in this piece of code I want to compare:
 % choosing end states from committor clustering
@@ -88,75 +94,93 @@ end
 
 % Now that I've identified the optimal wells, I will do a diffusive
 % boundary search for the optimal clustering
-T=N*100;
+T=N*1000;
 t=0;
 % let's set up n_sim simulateneous searches at different temperatures
 n_sim=10;
-boundary(1,:)=randi([2,N-2],[1,n_sim]);
+boundary(1,:)=randi([2,N/2],[1,n_sim]);
+
 for i=1:n_sim
     boundary(2,i)=randi([boundary(1,i)+1,N-1],1);
 end
 
 A=zeros([N,3,n_sim]);
 for i=1:n_sim
-    A(tmp2(1:boundary(1)),1,i)=1;
-    A(tmp2(boundary(1)+1:boundary(2)),2,i)=1;
-    A(tmp2(boundary(2)+1:end),3,i)=1;
+    A(tmp2(1:boundary(1,i)),1,i)=1;
+    A(tmp2(boundary(1,i)+1:boundary(2,i)),2,i)=1;
+    A(tmp2(boundary(2,i)+1:end),3,i)=1;
 end
 % temperatures for sims
 for i=1:n_sim
     [kemeny_latest(i)]=kemeny_boundary(K,INV_K,eq,A(:,:,i));
 end
-keyboard
+
 switchcount=0;
 prop_count=0;
-temp=1:10;
+temp=linspace(10:10:100;
+% I could calculate the acceptance ration on the fly and adjust the
+% temperature as I gok
+temp=temp*0.025;
 best_kem_yet=0;
+%keyboard
 while t<T
     t=t+1;
     tic
     % for each simulation
     for i=1:n_sim
-        
         % pick a connection between differing clusters
         % find two nodes from different clusters and propose flipping one
         % of the nodes
-        edge=(Adj-eye(length(Adj)))*squeeze(A(:,:,i));
-        edge=(1-A(:,:,i)).*edge;
+        A_tmp=squeeze(A(:,:,i));
+        count=0;
+        for ii=1:size(A,2)
+            if sum(A(:,ii,i))<2
+                count=count+1;
+                single_node(count)=find(A_tmp(:,ii));
+            end
+        end
+        edge=(Adj-eye(length(Adj)))*squeeze(A_tmp);
+        edge=(1-A_tmp).*edge;
         edge_nodes=mod(find(edge),N);
         edge_nodes(edge_nodes==0)=N;
+        if count~=0
+            for jj=single_node
+                edge_nodes(edge_nodes==jj)=[];
+            end
+        end
         switch_node=datasample(edge_nodes,1); % choose a node that is
         oldC=find(A(switch_node,:,i));
         % connected to a different cluster
-        edge_cluster=find(edge(switch_node)); % check which clusters it connected to
+        edge_cluster=find(edge(switch_node,:)); % check which clusters it connected to
         newC=datasample(edge_cluster,1); % pick a cluster
         %switch_node2=Adj(switch_node,:).*A(:,switch_cluster,i); 
         %switch_node2=datasample(switch_node2,1);
         % second node to do the switch with
-
-        keyboard
+        %keyboard
         % propose a flip to the boundary
         A_new(:,:,i)=A(:,:,i);
-        A_new(node_switch,oldC,i)=0;
-        A_new(node_switch,newC,i)=1;
+        A_new(switch_node,oldC,i)=0;
+        A_new(switch_node,newC,i)=1;
         try
-            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,A(:,:,i));
-        catch
-            kemenyR_new = 0;
-        end
-        if kemenyR_new>kemeny_latest(i)
-            switchcount=switchcount+1;
-            kemeny_latest(i)=kemenyR_new;
-            A(:,:,i)=A_new(:,:,i);
-        elseif kemenyR_new<=kemeny_latest(i)
-            val=rand(1);
-            condition = exp((kemenyR_new-kemeny_latest(i))*(1/temp(i)));
-            if val<condition
+            %A_new(:,:,i);
+            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,A_new(:,:,i));
+            if kemenyR_new>kemeny_latest(i)
                 switchcount=switchcount+1;
                 kemeny_latest(i)=kemenyR_new;
                 A(:,:,i)=A_new(:,:,i);
+            elseif kemenyR_new<=kemeny_latest(i)
+                val=rand(1);
+                condition = exp((kemenyR_new-kemeny_latest(i))*(1/temp(i)));
+                %keyboard
+                if val<condition
+                    switchcount=switchcount+1;
+                    kemeny_latest(i)=kemenyR_new;
+                    A(:,:,i)=A_new(:,:,i);
+                end
             end
-        end  
+        catch
+            kemenyR_newX = 0;
+        end
     end
     % after a certain number of steps attempt some changes
     if mod(t,10)==0
@@ -171,7 +195,7 @@ while t<T
                 A(:,:,[ii jj])=A(:,:,[jj, ii]);
             else
                 val=rand(1);
-                condition = exp((kemeny_latest(jj)-kemeny_latest(ii))*((1/temp(ii))-(1/temp(jj))));
+                condition = exp((kemeny_latest(jj)-kemeny_latest(ii))*((1/temp(jj))-(1/temp(ii))));
                 if condition<val
                     %switchcount=switchcount+1;
                     kemeny_latest([ii jj])=kemeny_latest([jj ii]);
@@ -187,12 +211,12 @@ while t<T
         opt_bound=A(:,:,b);
         best_kem_yet=a;
     end
-    timetaken=toc
-      keyboard
+    timetaken=toc;
 end
 best_split=opt_bound;
 diffusion=toc;
-
+keyboard
+%%
 % colour based on 'best' splitting
 figure()
 subplot(1,2,1)
@@ -201,7 +225,18 @@ highlight(h,find(best_split(:,1)),'NodeColor','g')
 highlight(h,find(best_split(:,2)),'NodeColor','r')
 highlight(h,find(best_split(:,3)),'NodeColor','k')
 title('Best splitting','FontSize', 18)
-
+%
+% colour based on 'best' splitting
+% for i=1:10
+%     figure(i+5)
+%     best_split=A(:,:,i);
+%     h = plot(G);
+%     highlight(h,find(best_split(:,1)),'NodeColor','g')
+%     highlight(h,find(best_split(:,2)),'NodeColor','r')
+%     highlight(h,find(best_split(:,3)),'NodeColor','k')
+%     title('Best splitting','FontSize', 18)
+% end
+%
 % Here I want to do the exhaustive version where I try every combination of
 % states to cluster in to.
 %tic
@@ -241,8 +276,6 @@ title('Best splitting','FontSize', 18)
 % third of all, I want to do a semi-exhaustive search where I take the 1-D
 % ordering and search every 1D clustering
 
-% This bit of code that's commented out, doesn't work at the moment cos
-% it's missing the update rule for A.
 kem_max=0;
 for i1=2:N-2
     for j1=i+1:N-1

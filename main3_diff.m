@@ -36,7 +36,7 @@ close all
 % end
 % N=size(A,1); % total number of nodes in the network
 
-N=10;
+N=60;
 A=erdosrenyi_2(N,N/2,[0.8,0.025;0.025,0.8]);
 N=length(A);
 % make a figure of the graph we have generated
@@ -94,10 +94,10 @@ end
 
 % Now that I've identified the optimal wells, I will do a diffusive
 % boundary search for the optimal clustering
-T=N*200;
+T=N*100;
 t=0;
 % let's set up n_sim simulateneous searches at different temperatures
-n_sim=10;
+n_sim=50;
 boundary(1,:)=randi([2,N/2],[1,n_sim]);
 
 for i=1:n_sim
@@ -117,10 +117,12 @@ end
 
 switchcount=0;
 prop_count=0;
-temp=1:10;
-temp=temp*2;
+temp=linspace(0.25,100,n_sim);
+% I could calculate the acceptance ration on the fly and adjust the
+% temperature as I gok
+
 best_kem_yet=0;
-keyboard
+%keyboard
 while t<T
     t=t+1;
     tic
@@ -129,11 +131,23 @@ while t<T
         % pick a connection between differing clusters
         % find two nodes from different clusters and propose flipping one
         % of the nodes
-        edge=(Adj-eye(length(Adj)))*squeeze(A(:,:,i));
-        edge=(1-A(:,:,i)).*edge;
+        A_tmp=squeeze(A(:,:,i));
+        count=0;
+        for ii=1:size(A,2)
+            if sum(A(:,ii,i))<2
+                count=count+1;
+                single_node(count)=find(A_tmp(:,ii));
+            end
+        end
+        edge=(Adj-eye(length(Adj)))*squeeze(A_tmp);
+        edge=(1-A_tmp).*edge;
         edge_nodes=mod(find(edge),N);
         edge_nodes(edge_nodes==0)=N;
-        edge_nodes;
+        if count~=0
+            for jj=single_node
+                edge_nodes(edge_nodes==jj)=[];
+            end
+        end
         switch_node=datasample(edge_nodes,1); % choose a node that is
         oldC=find(A(switch_node,:,i));
         % connected to a different cluster
@@ -148,7 +162,8 @@ while t<T
         A_new(switch_node,oldC,i)=0;
         A_new(switch_node,newC,i)=1;
         try
-            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,A(:,:,i));
+            %A_new(:,:,i);
+            [kemenyR_new]=kemeny_boundary(K,INV_K,eq,A_new(:,:,i));
             if kemenyR_new>kemeny_latest(i)
                 switchcount=switchcount+1;
                 kemeny_latest(i)=kemenyR_new;
@@ -156,6 +171,7 @@ while t<T
             elseif kemenyR_new<=kemeny_latest(i)
                 val=rand(1);
                 condition = exp((kemenyR_new-kemeny_latest(i))*(1/temp(i)));
+                %keyboard
                 if val<condition
                     switchcount=switchcount+1;
                     kemeny_latest(i)=kemenyR_new;
@@ -179,7 +195,7 @@ while t<T
                 A(:,:,[ii jj])=A(:,:,[jj, ii]);
             else
                 val=rand(1);
-                condition = exp((kemeny_latest(jj)-kemeny_latest(ii))*((1/temp(ii))-(1/temp(jj))));
+                condition = exp((kemeny_latest(jj)-kemeny_latest(ii))*((1/temp(jj))-(1/temp(ii))));
                 if condition<val
                     %switchcount=switchcount+1;
                     kemeny_latest([ii jj])=kemeny_latest([jj ii]);
@@ -199,7 +215,8 @@ while t<T
 end
 best_split=opt_bound;
 diffusion=toc;
-
+keyboard
+%%
 % colour based on 'best' splitting
 figure()
 subplot(1,2,1)
@@ -208,7 +225,18 @@ highlight(h,find(best_split(:,1)),'NodeColor','g')
 highlight(h,find(best_split(:,2)),'NodeColor','r')
 highlight(h,find(best_split(:,3)),'NodeColor','k')
 title('Best splitting','FontSize', 18)
-
+%
+% colour based on 'best' splitting
+% for i=1:10
+%     figure(i+5)
+%     best_split=A(:,:,i);
+%     h = plot(G);
+%     highlight(h,find(best_split(:,1)),'NodeColor','g')
+%     highlight(h,find(best_split(:,2)),'NodeColor','r')
+%     highlight(h,find(best_split(:,3)),'NodeColor','k')
+%     title('Best splitting','FontSize', 18)
+% end
+%
 % Here I want to do the exhaustive version where I try every combination of
 % states to cluster in to.
 %tic
@@ -248,8 +276,6 @@ title('Best splitting','FontSize', 18)
 % third of all, I want to do a semi-exhaustive search where I take the 1-D
 % ordering and search every 1D clustering
 
-% This bit of code that's commented out, doesn't work at the moment cos
-% it's missing the update rule for A.
 kem_max=0;
 for i1=2:N-2
     for j1=i+1:N-1
