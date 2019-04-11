@@ -37,8 +37,8 @@ close all
 % N=size(A,1); % total number of nodes in the network
 
 
-nodes=[10,10,10,10,10,10];
-A=erdosrenyi_N(nodes,[0.8,0.025]);
+nodes=[15,15,15,15];
+A=erdosrenyi_N(nodes,[0.8,0.015]);
 N=length(A);
 % make a figure of the graph we have generated
 G = digraph(A); % directed graph from adjacency matrix generated
@@ -102,7 +102,7 @@ n_sim=50;
 
 % My way of choosing the initial grouping is pretty arbitrary and maybe not
 % the best way. Something to come back to.
-NCLUS=6; %number of clusters to use
+NCLUS=5; %number of clusters to use
 boundary(1,:)=randi([2,floor(N/(NCLUS-1))],[1,n_sim]);
 for i=1:n_sim
     for j=2:(NCLUS-1)
@@ -110,7 +110,7 @@ for i=1:n_sim
     end
 end
 
-A=zeros([N,3,n_sim]);
+A=zeros([N,NCLUS,n_sim]);
 for i=1:n_sim
     A(tmp2(1:boundary(1,i)),1,i)=1;
     for j=2:(NCLUS-1)
@@ -234,16 +234,16 @@ while t<T
 end
 best_split=opt_bound;
 diffusion=toc;
-keyboard
 %%
 % colour based on 'best' splitting
 figure()
-subplot(1,2,1)
+%subplot(1,2,1)
 h = plot(G);
 for i=1:NCLUS
     highlight(h,find(best_split(:,i)),'NodeColor',[rand(1,3)])
 end
 title('Best splitting','FontSize', 18)
+keyboard
 %
 % colour based on 'best' splitting
 % for i=1:10

@@ -14,5 +14,6 @@ N=size(K,1);
 % same as the slowest timescale
 kemenyR=sum(-1./Reigs(2:end));
 kemenyR=sum(-1./Reigs(2));
+kemenyR=sum(-1./Reigs(2:(size(A,2))));
 
 end
