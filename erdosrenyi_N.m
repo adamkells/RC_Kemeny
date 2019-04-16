@@ -1,4 +1,4 @@
-function [A]=erdosrenyi_N(N,Wvec)
+function [K,Adj]=erdosrenyi_N(N,Wvec)
 %
 % nodes: number of nodes in the 2 cluster graph
 % N1: number of nodes in each cluster 
@@ -19,7 +19,7 @@ W=ones(length(N))*Wvec(2);
 for i=1:length(N)
    W(i,i)=Wvec(1);
 end
-A=zeros(nodes);
+Adj=zeros(nodes);
 
 
 for i=1:nodes
@@ -27,13 +27,13 @@ for i=1:nodes
         P(i,j) = (4)*W(x(i),x(j))/(nodes*(p(x(i))*p(x(j))));
         r = rand(1);
         if r<P(i,j)
-            A(i,j)=1;
+            Adj(i,j)=1;
         end
     end
 end
 for i=1:nodes
     for j=1:i
-        A(i,j)=A(j,i);
+        Adj(i,j)=Adj(j,i);
     end
 end
 
@@ -44,12 +44,27 @@ end
 
 rem=[];
 for i=1:nodes
-    if max(A(i,:))==0 || max(A(:,i))==0
+    if max(Adj(i,:))==0 || max(Adj(:,i))==0
         rem=[rem i];
     end
 end
-A(rem,:)=[];
-A(:,rem)=[];
-rem
+Adj(rem,:)=[];
+Adj(:,rem)=[];
+
+% make a figure of the graph we have generated
+%G = digraph(Adj); % directed graph from adjacency matrix generated
+%h=plot(G);
+
+% create a matrix which describes the rate of transition between states
+% evenly divide rate among number of states linked to
+for i = 1:nodes
+    for j = 1:nodes
+        K(i,j)=Adj(i,j)/sum(Adj(:,j));
+    end
+end
+for i = 1:nodes
+    K(i,i)=0;
+    K(i,i)=-sum(K(i,:));
+end
 
 end

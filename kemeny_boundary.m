@@ -1,19 +1,20 @@
-function [kemenyR]=kemeny_boundary(K,INV_K,eq,A)
+function [kemenyR]=kemeny_boundary(K,INV_K,eq,A,jj,param)
 
-N=size(K,1);
-% A=zeros(N,3);
-% A(tmp2(1:boundary(1)),1)=1;
-% A(tmp2(boundary(1)+1:boundary(2)),2)=1;
-% A(tmp2(boundary(2)+1:end),3)=1;
-[R,P_EQ,Aclus]=hummer_szabo_clustering_A(K',INV_K, eq, A);
+% computing hummer-szabo reduced matrix
+if jj==0
+    [R,~,~]=hummer_szabo_clustering_A(K,INV_K, eq, A);
+elseif jj==1
+    R=localeq(K',eq,A);
+end
 
 % analyse eigenvalues vectors of clustered matrix R
-[Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
+[Reigs,~,~,~,~]=spec_decomp(R);
 
-% compute reduced kemeny (for 2 state clustering this is just the
-% same as the slowest timescale
-kemenyR=sum(-1./Reigs(2:end));
-kemenyR=sum(-1./Reigs(2));
-kemenyR=sum(-1./Reigs(2:(size(A,2))));
-
+% compute variational parameter
+if param==0
+    kemenyR=sum(-1./Reigs(2:end));
+elseif param==1
+   kemenyR=sum(-1./Reigs(2)); 
+end
+%kemenyR=sum(-1./Reigs(2:(end-1)));
 end
