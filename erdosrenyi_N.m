@@ -57,6 +57,7 @@ Adj(:,rem)=[];
 
 % create a matrix which describes the rate of transition between states
 % evenly divide rate among number of states linked to
+
 for i = 1:nodes
     for j = 1:nodes
         K(i,j)=Adj(i,j)/sum(Adj(:,j));

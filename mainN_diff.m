@@ -5,8 +5,8 @@ close all
 potential_type=0;
 % each element of the vector is the number of nodes within each cluster
 if potential_type==0
-    nodes=[50,50,50,50,50]; % length of vector defines number of clusters
-    [K,Adj]=erdosrenyi_N(nodes,[0.9,0.02]); % this creates a random erdos renyi graph
+    nodes=[40,40]; % length of vector defines number of clusters
+    [K,Adj]=erdosrenyi_N(nodes,[0.9,0.025]); % this creates a random erdos renyi graph
 elseif potential_type==1
     [K,Adj,v]=szabo(20);
 end
@@ -23,10 +23,10 @@ slow_rels = -1./Keigs(2:end); % relaxation processes
 
 % by plotting the relaxation times, we can determine the number of stable
 % clusters within the system
-figure()
-plot(slow_rels(1:6),'o')
-xlabel('Relaxation process')
-ylabel('Time')
+% figure()
+% plot(slow_rels(1:6),'o')
+% xlabel('Relaxation process')
+% ylabel('Time')
 
 G = digraph(Adj); % directed graph from adjacency matrix generated
 h=plot(G);
@@ -51,6 +51,7 @@ red_method=1;
 % choice of variational parameter
 % 0 for kemeny
 % 1 for tau_2
+% 2 for kemeny-1
 param=0;
 
 % The first step to try and find a 1D ordering of my nodes. To do this I
@@ -79,7 +80,7 @@ end
 % www.emma-project.org/v2.2.1/api/generated/msmtools.analysis.committor.html
 [committor]=compute_commit(K',end_points); % find committor for each state
 [~,tmp2]=sort(committor); % order all nodes from the committor
-
+keyboard
 
 % Now that I've order my states, I want to do a diffusive search for the
 % optimal clusters
@@ -87,7 +88,7 @@ end
 T=N*10; % the total amount of time that I will simulate for
 
 % next set up n_sim simultaneous searches at different temperatures
-n_sim=50;
+n_sim=200;
 
 NCLUS=5; %number of clusters to look for
 % this number can be chosen by examining the separation of timescales
@@ -103,7 +104,7 @@ for i=1:n_sim
         boundary(j,i)=randi([boundary((j-1),i)+2,(floor(j*N/(NCLUS-1))-1)],1);
     end
 end
-%%
+
 % This code creates a clustering matrix A from the boundaries which
 % specifies which cluster each node belongs to
 A=zeros([N,NCLUS,n_sim]);
@@ -236,7 +237,7 @@ while t<T
     if mod(t,10)==0
        px=switchcount/(n_sim*10); % currect accepted fraction since last update
        switchcount=0; % reset the counter of accepted configurations
-       correction=log(px)/log(0.2);
+       correction=log(px)/log(0.5);
        temp=temp*correction;
     end
     

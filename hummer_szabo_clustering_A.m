@@ -27,9 +27,8 @@ D_n=diag(P_eq);
 % Creates a three-column matrix of length n: one column for each state.
 % Shows how original states are aggregated.
 
-
 % Calculating reduced matrix for the reduced two-state model
 % Hummer-Szabo 2014, equation 12
-R=P_EQ*ONE_VEC - D_N*(inv(transpose(A)*INV_K*D_n*A));
+R=P_EQ*ONE_VEC - D_N*(inv(A'*INV_K*D_n*A));
 
 end
