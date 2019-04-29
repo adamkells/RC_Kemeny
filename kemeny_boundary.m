@@ -1,8 +1,8 @@
-function [kemenyR]=kemeny_boundary(K,INV_K,eq,A,jj,param)
+function [kemenyR,R]=kemeny_boundary(K,INV_K,eq,A,jj,param)
 
 % computing hummer-szabo reduced matrix
 if jj==0
-    [R,P_EQ,~]=hummer_szabo_clustering_A(K,INV_K, eq, A);
+    [R,~,~]=hummer_szabo_clustering_A(K,INV_K, eq, A);
 elseif jj==1
     R=localeq(K,eq,A);
 end

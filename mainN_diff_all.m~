@@ -147,7 +147,7 @@ for red_method=0:1
         best_kem_yet=max(kemeny_latest);
         % preset the modularity value
         Q=0;
-        % I might in a later version, make a movie showing the convergence of the
+        % I might in a later version, make a movie showing the convergence of t[[[]##[[[#he
         % clusters and this will be used to index the frames of the movie
         framecount=0;
         % starting time
