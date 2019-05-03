@@ -29,7 +29,7 @@ D_n=diag(P_eq);
 
 % Calculating reduced matrix for the reduced two-state model
 % Hummer-Szabo 2014, equation 12
-%mmkeyboard
+% keyboard
 R=P_EQ*ONE_VEC - D_N*(inv(A'*INV_K*D_n*A));
 
 end

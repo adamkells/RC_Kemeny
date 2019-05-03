@@ -5,10 +5,10 @@ close all
 potential_type=0;
 % each element of the vector is the number of nodes within each cluster
 if potential_type==0
-    nodes=[10,10,10,10]; % length of vector defines number of clusters
-    [K,Adj]=erdosrenyi_N(nodes,[0.7,0.01]); % this creates a random erdos renyi graph
+    nodes=[10,10]; % length of vector defines number of clusters
+    [K,Adj]=erdosrenyi_N(nodes,[0.7,0.02]); % this creates a random erdos renyi graph
 elseif potential_type==1
-    [K,Adj,v]=szabo(15);
+    [K,Adj,v]=szabo(10);
 end
 K=K';
 % the first input is the vector of nodes from before, the second input is
@@ -19,9 +19,10 @@ N=size(K,1); % N is the total number of nodes
 N2=sqrt(N);
 % do spectral decomposition of the rate matrix of the system
 [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K);
+%keyboard
 kemeny = sum(-1./Keigs(2:end)); % kemeny constant of system
 slow_rels = -1./Keigs(2:end); % relaxation processes
-% keyboard
+% keyboard;
 % by plotting the relaxation times, we can determine the number of stable
 % clusters within the system
 % figure()
@@ -29,7 +30,7 @@ slow_rels = -1./Keigs(2:end); % relaxation processes
 % xlabel('Relaxation process')
 % ylabel('Time')
 %load('bad_example.mat')
-
+%K=K';
 G = digraph(Adj); % directed graph from adjacency matrix generated
 h=plot(G);
 %keyboard
@@ -46,7 +47,7 @@ INV_K=(inv(eq*one_vec-K));
 
 % color scheme for the graph later
 
-NCLUS=5; %number of clusters to look for
+NCLUS=3; %number of clusters to look for
 
 for iii=1:NCLUS
     color_scheme(iii,:)=rand(1,3);
@@ -100,7 +101,7 @@ for red_method=0:1
         T=N*20; % the total amount of time that I will simulate for
         
         % next set up n_sim simultaneous searches at different temperatures
-        n_sim=2*N;
+        n_sim=30;
         % this number can be chosen by examining the separation of timescales
         
         % My way of choosing the initial grouping of states is pretty arbitrary and
@@ -140,6 +141,7 @@ for red_method=0:1
         % count of how many proposed moves are accepted, used to calculate the
         % neccesary change to the temperature
         switchcount=0;
+        attswitch=0;
         switchcount2(1:n_sim)=0;
         switchcount3(1:n_sim)=0;
         bad_suggest(1:n_sim)=0;
@@ -155,6 +157,7 @@ for red_method=0:1
         while t<T
             % counter to display progress
             if mod(t,100)==0
+                %keyboard
                 display(['Completion is:', num2str(100*t/T), '%']);
                 display(['Best value is:', num2str(best_kem_yet)]);
                 display(['Modularity is:', num2str(Q)]);
@@ -171,6 +174,7 @@ for red_method=0:1
                 
                 % this first bit makes sure i dont pick a node from a cluster which
                 % only contains one node
+                single_node=0;
                 A_tmp=squeeze(A(:,:,i));
                 count=0;
                 for ii=1:size(A,2)
@@ -213,6 +217,7 @@ for red_method=0:1
                         kemeny_latest(i)=kemenyR_new;
                         A(:,:,i)=A_new(:,:,i);
                     elseif kemenyR_new<=kemeny_latest(i)
+                        attswitch=attswitch+1;
                         val=rand(1);
                         condition = exp((kemenyR_new-kemeny_latest(i))*(1/temp(i)));
                         if condition==0
@@ -227,6 +232,7 @@ for red_method=0:1
                     end
                 catch
                     bloop=bloop+1;
+                    keyboard
                 end
             end
             
@@ -252,11 +258,13 @@ for red_method=0:1
                     end
                 end
             end
-            
+            %keyboard
             % next I update temperature during the simulation to keep 50% acceptance
-            if mod(t,10)==0
-                px=switchcount/(n_sim*10); % currect accepted fraction since last update
-                switchcount=0; % reset the counter of accepted configurations
+            if mod(t,100)==0
+                px=sum(switchcount3)/(attswitch); % currect accepted fraction since last update
+                %keyboard
+                attswitch=0;
+                switchcount3(1:n_sim)=0; % reset the counter of accepted configurations
                 correction=log(px)/log(0.5);
                 temp=temp*correction;
             end
@@ -320,6 +328,8 @@ for red_method=0:1
             text(-4,4,txt)
             txt = ['Modularity: ' num2str(Q)];
             text(-4,3,txt)
+            saveas(gcf,[num2str(counter) '_figure.png'],'png')
+            cc(:,:,counter)=best_split;
         elseif potential_type==1
             cluster_V=zeros(N2);
             for j=1:NCLUS
@@ -331,16 +341,32 @@ for red_method=0:1
                     cluster_V(new_ind1(i),new_ind2(i))=j;
                 end
             end
+            cc(:,:,counter)=best_split;
+            dd(:,:,counter)=cluster_V;
         end
         %keyboard
     end
+    %keyboard
     bb(:,:,red_method+1)=best_split;
 end
 
 % I want to check that the LE and HS im obtaining satisfies the correlation
 % function rules that they are required to
-[kemeny_l,R1G]=kemeny_boundary(K,INV_K,eq,bb(:,:,1),0,1)
-[kemeny_l,R2G]=kemeny_boundary(K,INV_K,eq,bb(:,:,2),1,1)
-[kemeny_l,R1B]=kemeny_boundary(K,INV_K,eq,bb(:,:,2),0,1)
-[kemeny_l,R2B]=kemeny_boundary(K,INV_K,eq,bb(:,:,1),1,1)
-
+% [kemeny_l,R1G]=kemeny_boundary(K,INV_K,eq,bb(:,:,1),0,1)
+% [kemeny_l,R2G]=kemeny_boundary(K,INV_K,eq,bb(:,:,2),1,1)
+% [kemeny_l,R1B]=kemeny_boundary(K,INV_K,eq,bb(:,:,2),0,1)
+% [kemeny_l,R2B]=kemeny_boundary(K,INV_K,eq,bb(:,:,1),1,1)
+%%
+for ii=0:1
+    for jj=0:2
+        [ii,jj]
+        for choice=1:6
+            [kemeny_l(choice),Rtmp]=kemeny_boundary(K,INV_K,eq,cc(:,:,choice),ii,jj);
+        end
+        opt = (ii*3)+(jj+1)
+        [a,b]=max(kemeny_l);
+        b
+        kemeny_l
+        %Rtmp
+    end
+end

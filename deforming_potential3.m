@@ -11,13 +11,14 @@ c=0;
 for alpha=0:0.25:1
     for clus_opt=0:1
         c=c+1;
-        N=200; %number of states
+        N=50; %number of states
         x=linspace(0,5*pi,N);
         
         y1=2*sin((x-pi)); %double well
         y2=2*sin((x-pi)/2); %triple well
-        y=alpha*y2+(1-alpha)*y1;
-        
+        y3=2*sin(1.5*(x-pi));
+        y=alpha*y3+(1-alpha)*y1;
+
         y=y-min(y);
         A=10;
         KbT=0.596;
@@ -45,6 +46,8 @@ for alpha=0:0.25:1
         % committor between each pair of states
         
         %%
+        one_vec=ones(1,length(K'));
+        INV_K=(inv(eq*one_vec-K'));
         % lets choose two states
         tic
         end_points = randi(N,[1,2]);
@@ -71,7 +74,8 @@ for alpha=0:0.25:1
                         A(tmp2(1:i1),1)=1;
                         A(tmp2(i1+1:j1),2)=1;
                         A(tmp2(j1+1:end),3)=1;
-                        [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K', eq, A);
+                        keyboard
+                        [R,P_EQ,Aclus]=hummer_szabo_clustering_A(K',INV_K, eq, A);
                         
                         % analyse eigenvalues vectors of clustered matrix R
                         [Reigs,~,rel__R,R_eig_R,R_eig_L]=spec_decomp(R);
