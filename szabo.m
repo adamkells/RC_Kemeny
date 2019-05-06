@@ -9,7 +9,7 @@ for i = 1:length(x)
     end
 end
 v=v-min(min(v));
-
+v=v;
 % want to create a 1D rate matrix from this potential energy
 % have to create a mapping from 2D states in to a single index
 K=zeros(N^2);
