@@ -2,13 +2,13 @@
 % identification
 clear all
 close all
-potential_type=1;
+potential_type=0;
 % each element of the vector is the number of nodes within each cluster
 if potential_type==0
     nodes=[30,30,30]; % length of vector defines number of clusters
     [K,Adj]=erdosrenyi_N(nodes,[0.8,0.01]); % this creates a random erdos renyi graph
 elseif potential_type==1
-    [K,Adj,v]=szabo(20);
+    [K,Adj,v]=szabo(15);
 end
 K=K';
 % the first input is the vector of nodes from before, the second input is
@@ -21,12 +21,11 @@ N2=sqrt(N);
 [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K);
 kemeny = sum(-1./Keigs(2:end)); % kemeny constant of system
 slow_rels = -1./Keigs(2:end); % relaxation processes
-keyboard
-% 
+
 G = digraph(Adj); % directed graph from adjacency matrix generated
 h=plot(G);
 save('system.mat');
-
+%K=K';
 %% CLUSTERING %%%%%%%%%%%%%%%
 clear all
 load('system.mat')
@@ -45,10 +44,10 @@ for iii=1:NCLUS
     color_scheme(iii,:)=rand(1,3);
 end
 
-T=N*100; % the total amount of time that I will simulate for
+T=N*25; % the total amount of time that I will simulate for
 
 % next set up n_sim simultaneous searches at different temperatures
-n_sim=2*(N/NCLUS);
+n_sim=N/NCLUS;
 
 % choice of reduction method, 0 for Hummer-Szabo, 1 for local equilibrium
 counter=0;
@@ -291,4 +290,3 @@ end
 
 %%
 conv_check()
-save(['results_' num2str(potential_type) '.mat'])
