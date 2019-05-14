@@ -103,9 +103,12 @@ for red_method=0:1
         % for the parallel tempering, I need to choose temperatures for sims
         % as temperature has no physical meaning here, the temperatures will be
         % changed over the course of the simulation to maintain an acceptance ratio
-        % of 50%. So I can pretty much choose whatever numbers here.
+        % of 50%. I noticed that the convergence wasn't good though which 
+        % was because the initial temperatures were high and in the time
+        % for them to be revised downwards the clusters got messed up. So I
+        % need to start small and revise upwards.
         temp=linspace(1,10,n_sim);
-        temp=temp*0.01;
+        temp=temp*0.001;
         % count of how many proposed moves are accepted, used to calculate the
         % neccesary change to the temperature
         switchcount=0;
