@@ -2,13 +2,15 @@
 % identification
 clear all
 close all
-potential_type=1;
+potential_type=2;
 % each element of the vector is the number of nodes within each cluster
 if potential_type==0
     nodes=[30,30,30]; % length of vector defines number of clusters
     [K,Adj]=erdosrenyi_N(nodes,[0.8,0.01]); % this creates a random erdos renyi graph
 elseif potential_type==1
     [K,Adj,v]=szabo(20);
+elseif potential_type==2
+    [K,Adj,v]=linear_pot(100);
 end
 K=K';
 % the first input is the vector of nodes from before, the second input is
@@ -41,14 +43,13 @@ INV_K=(inv(eq*one_vec-K));
 
 NCLUS=4; %number of clusters to look for
 
-for iii=1:NCLUS
-    color_scheme(iii,:)=rand(1,3);
-end
 
-T=N*100; % the total amount of time that I will simulate for
+color_scheme=[1,0,0;0,0,1;0,1,0;1,1,0;0,1,1;1,0,1;1,1,1;0,0,0];
+
+T=N*4; % the total amount of time that I will simulate for
 
 % next set up n_sim simultaneous searches at different temperatures
-n_sim=2*(N/NCLUS);
+n_sim=2*floor(N/NCLUS);
 
 % choice of reduction method, 0 for Hummer-Szabo, 1 for local equilibrium
 counter=0;
@@ -57,7 +58,7 @@ bloop=0;
 for red_method=0:1
     display(num2str(red_method))
     % choice of variational parameter, 0 for kemeny, 1 for tau_2, 2 for kemeny-1
-    for param=[0,2]
+    for param=[0,1]
         counter=counter+1;
         % The first step to try and find a 1D ordering of my nodes. To do this I
         % find the two most kinetically distinct states and then order the
@@ -262,6 +263,7 @@ for red_method=0:1
         if potential_type==0
             figure(counter+1)
             h = plot(G);
+            h.NodeLabel= {};
             for i=1:NCLUS
                 highlight(h,find(best_split(:,i)),'NodeColor',color_scheme(i,:))
             end
@@ -285,6 +287,8 @@ for red_method=0:1
             end
             cc(:,:,counter)=best_split;
             dd(:,:,counter)=cluster_V;
+        elseif potential_type==2
+            cc(:,:,counter)=best_split;
         end
     end
 end
