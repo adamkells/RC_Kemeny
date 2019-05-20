@@ -1,17 +1,24 @@
 function [K,Adj,v] = linear_pot(nstates)
 
-x=linspace(-4*pi,4*pi,nstates); % x-axis from -4pi to 4pi
+x=linspace(-4*pi,4*pi,nstates/4); % x-axis from -4pi to 4pi
 
 % choice of four difference potentials
-
-v =sin(0.7*(x - 1*pi)); %single well
-v =-sin((x-pi)/2); %double well
-v=0.5*sin(1.5*(x)/2-pi/2); %triple well
+% v1 =sin(0.3*(x - 1*pi)); %single well
+% %v1 =-sin((x-pi)/2); %double well
+% v2=2*sin(1.5*(x)/2-pi/2); %triple well
+% v2=-2*sin(1.5*(x)-pi/2);
+v=[];
+for i=1:4
+    v3=0.75*i*sin(0.25*(x)-1.5*pi);
+    v3=v3-min(v3);
+    v=[v v3];
+end
+v=-v;
+v=v-min(v);
 %y=-2*sin((x-pi)/2);
 %y=linspace(1,1,length(x)); %flat potential
-% y=y1+y2;
-% Arrhenius rates: Create the rate matrix for the system
-v=v-min(v);
+% v=v1+v2+x/(4*pi);
+% % Arr%keyboard
 A=1;
 KbT=0.596;
 for i=1:nstates-1

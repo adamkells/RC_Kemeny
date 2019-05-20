@@ -13,11 +13,11 @@ end
 %keyboard
 % compute variational parameter
 if param==0
-    kemenyR=sum(-1./Reigs(2:(end)));
+    kemenyR=sum(-1./Reigs(2));
 elseif param==1
-   kemenyR=sum(-1./Reigs(2)); 
+   kemenyR=sum(-1./Reigs(2:3)); 
 elseif param==2
-    kemenyR=sum(-1./Reigs(2:(end-1)));
+    kemenyR=sum(-1./Reigs(2:4));
 end
 %keyboard
 %kemenyR=sum(-1./Reigs(2:(end-1)));

@@ -3,6 +3,7 @@ function [end_points]=ep_choice(K,K_eig_R)
 secvec=0;
 if secvec==0 % MFPT endpoints
     MM=jjhunter(expm(K'));
+    MM=MM+MM';
     maximum = max(max(MM));
     [x,y]=find(MM==maximum);
     end_points=[x,y];
