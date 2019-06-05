@@ -1,52 +1,54 @@
-% % Code by Adam Kells to use Kemeny constant for reaction coordinate
-% % identification
-% clear all
-% close all
-% potential_type=0;
-% % each element of the vector is the number of nodes within each cluster
-% if potential_type==0
-%     nodes=[20,20,20]; % length of vector defines number of clusters
-%     [K,Adj]=erdosrenyi_N(nodes,[0.7,0.005]); 
-% elseif potential_type==1
-%     [K,Adj,v]=szabo(25);
-% elseif potential_type==2
-%     [K,Adj,v]=linear_pot(200);
-%     K=K';
-% end
-% K=K';
-% 
-% N=size(K,1); % N is the total number of nodes
-% N2=sqrt(N);
-% % do spectral decomposition of the rate matrix of the system
-% [Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K);
-% kemeny = sum(-1./Keigs(2:end)); % kemeny constant of system
-% slow_rels = -1./Keigs(2:end); % relaxation processes
-% G=digraph(Adj);
-% plot(G)
-% keyboard
-% save('system.mat');
+%Code by Adam Kells to use Kemeny constant for reaction coordinate
+%identification
+clear all
+close all
+potential_type=3;
+% each element of the vector is the number of nodes within each cluster
+if potential_type==0
+    nodes=[20,20,20]; % length of vector defines number of clusters
+    [K,Adj]=erdosrenyi_N(nodes,[0.7,0.005]); 
+elseif potential_type==1
+    [K,Adj,v]=szabo(30);
+elseif potential_type==2
+    [K,Adj,v]=linear_pot(200);
+    K=K';
+elseif potential_type==3
+    [K,Adj,corr]=terror();
+end
+K=K';
+
+N=size(K,1); % N is the total number of nodes
+N2=sqrt(N);
+% do spectral decomposition of the rate matrix of the system
+[Keigs,eq,rel_exact,K_eig_R,K_eig_L]=spec_decomp(K);
+kemeny = sum(-1./Keigs(2:end)); % kemeny constant of system
+slow_rels = -1./Keigs(2:end); % relaxation processes
+G=digraph(Adj);
+plot(G)
+keyboard
+save('system.mat');
 
 %% CLUSTERING %%%%%%%%%%%%%%%
 clear all
-load('Paper_files/ER_system_good.mat')
+load('system.mat')
 
 one_vec=ones(1,length(K));
 INV_K=(inv(eq*one_vec-K));
 
-NCLUS=4; %number of clusters to look for
-T=N*20; % the total amount of time that I will simulate for
+NCLUS=5; %number of clusters to look for
+T=N*10; % the total amount of time that I will simulate for
 n_sim=10*floor(N/NCLUS);
 
 % choice of reduction method, 0 for Hummer-Szabo, 1 for local equilibrium
 counter=0;
 px=0;
 
-color_scheme=[1,0,0;0,1,0;0,0,1;1,1,0];
+color_scheme=[0,0,1;1,0,0;0,1,0;1,1,0;0,1,1];
 
 for red_method=0
     display(num2str(red_method))
     % choice of variational parameter, 0 for kemeny, 1 for tau_2, 2 for kemeny-1
-    for param=0:2
+    for param=2
         counter=counter+1;
         
         [end_points]=ep_choice(K,K_eig_R);
@@ -186,7 +188,7 @@ for red_method=0
         if potential_type==0
             figure(counter+1)
             h = plot(G);
-            h.NodeLabel= {};
+            %h.NodeLabel= {};
             for i=1:NCLUS
                 highlight(h,find(best_split(:,i)),'NodeColor',color_scheme(i,:))
             end
@@ -214,21 +216,51 @@ for red_method=0
             cc(:,:,counter)=best_split;
             figure(counter+1)
             plot(v,'linewidth',2)
+            
             hold on
             state_c = sum(cc(:,:,counter));
             for stemp = 1:(NCLUS-1)
                 stem(sum(state_c(1:stemp)),v(sum(state_c(1:stemp))),'linewidth',2)
             end
             ylim([0,7])
+            xlabel('X','fontsize',20)
+            ylabel('V(X) [kcal/mol]','linewidth',20)
+            ax = gca;
+            ax.FontSize = 16;
             box off
             saveas(gcf,[num2str(counter)  num2str(param) num2str(potential_type) '_figure.png'],'png')
             saveas(gcf,[num2str(counter)  num2str(param) num2str(potential_type) '_figure.fig'],'fig')
-           
+        elseif potential_type==3
+            figure(counter+1)
+            h = plot(G);
+            %h.NodeLabel= {};
+            for i=1:NCLUS
+                highlight(h,find(best_split(:,i)),'NodeColor',color_scheme(i,:))
+            end
+            title('Best splitting','FontSize', 18)
+            %txt = ['Parameter: ' num2str(best_kem_yet)];
+            %text(-4,4,txt)
+            %txt = ['Modularity: ' num2str(Q)];
+            %text(-4,3,txt)
+            saveas(gcf,[num2str(counter) num2str(param) num2str(potential_type) '_figure.png'],'png')
+            cc(:,:,counter)=best_split;
+            figure(10)
+            h = plot(G);
+            %h.NodeLabel= {};
+            for i=0:4
+                highlight(h,find(corr(:,2)==i),'NodeColor',color_scheme(i+1,:))
+            end
         end
         %keyboard
     end
 end
 
+%% Do a comparison with Laplacian clustering
+D = diag(sum(Adj,2));
+L = D-Adj;
+[Vec,Val] = eig(L);
+
+
 %%
-conv_check()
-save(['results_' num2str(potential_type) '.mat'])
+%conv_check()
+%save(['results_' num2str(potential_type) '.mat'])

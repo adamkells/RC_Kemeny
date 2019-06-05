@@ -18,6 +18,8 @@ elseif param==1
    kemenyR=sum(-1./Reigs(2:3)); 
 elseif param==2
     kemenyR=sum(-1./Reigs(2:4));
+elseif param==3
+    kemenyR=sum(-1./Reigs(2:5));
 end
 %keyboard
 %kemenyR=sum(-1./Reigs(2:(end-1)));
